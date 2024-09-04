@@ -1,2 +1,0 @@
-Данные курьера для авторизации: {'login': '00vKEoC0YX', 'password': 'AUoWFSaNB4', 'firstName': 'WrNbUpuEsY'}
-Статус после авторизации курьера: 200

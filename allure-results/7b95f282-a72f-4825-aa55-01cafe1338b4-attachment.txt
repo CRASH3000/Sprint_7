@@ -1,2 +1,0 @@
-Статус после создания курьера в setup_class: 201
-Курьер создан: {'login': 'UoRfylnsyS', 'password': 'Z3lqKTKyrN', 'firstName': 'd1Ev2KZD59'}
