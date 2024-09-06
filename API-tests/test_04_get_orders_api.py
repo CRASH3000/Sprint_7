@@ -8,8 +8,10 @@ from data.url_data import Url
 class TestGetOrders:
 
     @allure.title("Можно получить список всех заказов")
-    @allure.description("Проверь, что в тело ответа возвращается список заказов.")
-    @allure.step("Отправляем GET-запрос на получение списка заказов")
+    @allure.description(
+        "Отправляем GET-запрос на получение списка заказов."
+        "Проверяем, что в тело ответа возвращается список заказов."
+    )
     def test_get_orders_list(self):
         response = requests.get(f"{Url.BASE_URL}/orders")
 
