@@ -1,3 +1,4 @@
+import pytest
 import requests
 import allure
 from data.url_data import Url
@@ -26,34 +27,30 @@ class TestCourierLoginAPI:
         assert response.status_code == 200, "Код ответа не 200 при успешной авторизации"
         assert "id" in response.json(), "Ответ не содержит id"
 
-        # Сохранение ID курьера
-        self.__class__.courier_id = response.json()["id"]
-
-    @allure.title("2. Авторизация без логина")
     @allure.description(
-        "Отправляем POST-запрос на авторизацию курьера с логином и паролем, которые мы получили при создании курьера."
-        "Проверяем, что нужно передать все обязательные поля и система вернёт ошибку, если нет логина"
+        "Отправляем POST-запрос на авторизацию курьера с неполными данными. "
+        "Проверяем, что система вернёт ошибку, если отсутствует обязательное поле."
     )
-    def test_login_missing_login(self):
+    @pytest.mark.parametrize(
+        "test_number, missing_field, data_combination, error_message",
+        [
+            (2, "login", "логина", "missing_error"),
+            (3, "password", "пароля", "missing_error"),
+        ],
+    )
+    def test_login_missing_fields(
+        self, test_number, missing_field, error_message, data_combination
+    ):
+        allure.dynamic.title(f"{test_number}. Авторизация без {data_combination}")
+
         invalid_data = incorrect_credentials.copy()
-        del invalid_data["login"]
+        del invalid_data[
+            missing_field
+        ]  # Удаляем одно из обязательных полей (логин или пароль)
 
         response = requests.post(f"{Url.BASE_URL}/courier/login", json=invalid_data)
 
-        assert response.json() == expected_responses["courier_login"]["missing_error"]
-
-    @allure.title("3. Авторизация без пароля")
-    @allure.description(
-        "Отправляем POST-запрос на авторизацию курьера с логином и паролем, которые мы получили при создании курьера."
-        "Проверяем, что нужно передать все обязательные поля и система вернёт ошибку, если нет логина"
-    )
-    def test_login_missing_password(self):
-        invalid_data = incorrect_credentials.copy()
-        del invalid_data["password"]
-
-        response = requests.post(f"{Url.BASE_URL}/courier/login", json=invalid_data)
-
-        assert response.json() == expected_responses["courier_login"]["missing_error"]
+        assert response.json() == expected_responses["courier_login"][error_message]
 
     @allure.title("4. Система вернёт ошибку, если неправильно указать логин или пароль")
     @allure.description(

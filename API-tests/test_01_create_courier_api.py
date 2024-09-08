@@ -1,3 +1,4 @@
+import pytest
 import requests
 import allure
 from data.courier_generator_data import generate_random_courier_data
@@ -21,6 +22,10 @@ class TestCourierAPI:
         assert response.status_code == 201
         assert response.json() == expected_responses["courier"]["create_success"]
 
+        courier_id = response.json().get("id")
+        if courier_id:
+            delete_courier.append(courier_id)
+
     @allure.title("2. Нельзя создать двух одинаковых курьеров")
     @allure.description(
         "Проверка, что нельзя создать двух одинаковых курьеров и ответом приходит "
@@ -37,54 +42,68 @@ class TestCourierAPI:
             == expected_responses["courier"]["duplicate_error"]
         )
 
-    @allure.title("3. Создание курьера без имени")
     @allure.description(
-        "Проверка, что можно создать курьера без имени, но с логином и паролем"
+        "Отправляем POST-запрос на создание курьера с различными комбинациями неполных данных, и проверяем что:"
+        "Если переданы обязательные поля (логин) и (пароль), курьер создается успешно, в противном случаи возвращается "
+        "ошибка"
     )
-    def test_create_courier_with_login_and_password(self, create_courier):
-        courier_data = create_courier
-
-        partial_data = {
-            "login": courier_data["login"],
-            "password": courier_data["password"],
-        }
-        response = requests.post(f"{Url.BASE_URL}/courier", json=partial_data)
-
-        assert response.json() == expected_responses["courier"]["duplicate_error"]
-
-    @allure.title("4. Создание курьера без логина")
-    @allure.description(
-        "Проверка, что создание курьера только с паролем и именем приводит к ошибке 400 "
-        "с сообщением 'Недостаточно данных для создания учетной записи'"
+    @pytest.mark.parametrize(
+        "test_number, courier_data_source, partial_data, data_combination, expected_response",
+        [
+            (
+                3,
+                "generate_random_courier_data",
+                {"login": "login", "password": "password"},
+                "имени",
+                "create_success",
+            ),
+            (
+                4,
+                "create_courier",
+                {"password": "password", "firstName": "firstName"},
+                "логина",
+                "missing_field_error",
+            ),
+            (
+                5,
+                "create_courier",
+                {"login": "login", "firstName": "firstName"},
+                "пароля",
+                "missing_field_error",
+            ),
+        ],
     )
-    def test_create_courier_with_password_and_firstname(
-        self, create_courier
+    def test_create_courier_with_incomplete_data(
+        self,
+        request,
+        delete_courier,
+        test_number,
+        courier_data_source,
+        partial_data,
+        data_combination,
+        expected_response,
     ):
-        courier_data = create_courier
 
-        partial_data = {
-            "password": courier_data["password"],
-            "firstName": courier_data["firstName"],
-        }
+        # Генерация курьера или использование фикстуры в зависимости от параметров
+        if courier_data_source == "generate_random_courier_data":
+            courier_data = generate_random_courier_data()
+        else:
+            courier_data = request.getfixturevalue(courier_data_source)
+
+        # Динамический заголовок для Allure
+        allure.dynamic.title(f"{test_number}. Создания курьера без {data_combination}")
+
+        for key, value in partial_data.items():
+            partial_data[key] = courier_data.get(key, value)
+
         response = requests.post(f"{Url.BASE_URL}/courier", json=partial_data)
 
-        assert response.json() == expected_responses["courier"]["missing_field_error"]
+        assert response.json() == expected_responses["courier"][expected_response]
 
-    @allure.title("5. Создание курьера без пароля")
-    @allure.description(
-        "Проверка, что создание курьера только с логином и именем приводит к ошибке 400 "
-        "с сообщением 'Недостаточно данных для создания учетной записи'"
-    )
-    def test_create_courier_with_login_and_firstname(self, create_courier):
-        courier_data = create_courier
-
-        partial_data = {
-            "login": courier_data["login"],
-            "firstName": courier_data["firstName"],
-        }
-        response = requests.post(f"{Url.BASE_URL}/courier", json=partial_data)
-
-        assert response.json() == expected_responses["courier"]["missing_field_error"]
+        if expected_response == "create_success":
+            courier_id = response.json().get("id")
+            if courier_id:
+                delete_courier.append(courier_id)
 
     @allure.title(
         "6. Если создать пользователя с логином, который уже есть, возвращается ошибка."

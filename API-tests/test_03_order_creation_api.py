@@ -1,3 +1,4 @@
+import pytest
 import requests
 import allure
 from data.url_data import Url
@@ -14,49 +15,26 @@ from data.order_test_data import (
 @allure.story("Создание заказа с разными цветами")
 class TestOrderCreation:
 
-    @allure.title("1. Можно создать заказ с черным цветом")
     @allure.description(
-        "Отправляем POST-запрос на создание заказа. "
-        "Проверяем, что заказ можно создать с черным цветом"
+        "Отправляем POST-запрос на создание заказа с разными цветами и проверяем, что заказ создан"
     )
-    def test_create_order_with_black_color(self):
-        response = requests.post(f"{Url.BASE_URL}/orders", json=order_data_black)
-
-        assert response.status_code == 201, "Код ответа не 201"
-        response_data = response.json()
-        assert "track" in response_data, "Ответ не содержит track"
-
-    @allure.title("2. Можно создать заказ с серым цветом")
-    @allure.description(
-        "Отправляем POST-запрос на создание заказа. "
-        "Проверяем, что заказ можно создать с серым цветом"
+    @pytest.mark.parametrize(
+        "test_number, order_data, color_description",
+        [
+            (1, order_data_black, "черным цветом"),
+            (2, order_data_grey, "серым цветом"),
+            (3, order_data_both_colors, "черным и серым цветами"),
+            (4, order_data_no_color, "без указания цвета"),
+        ],
     )
-    def test_create_order_with_grey_color(self):
-        response = requests.post(f"{Url.BASE_URL}/orders", json=order_data_grey)
+    def test_create_order_with_various_colors(
+        self, test_number, order_data, color_description
+    ):
+        response = requests.post(f"{Url.BASE_URL}/orders", json=order_data)
 
-        assert response.status_code == 201, "Код ответа не 201"
-        response_data = response.json()
-        assert "track" in response_data, "Ответ не содержит track"
-
-    @allure.title("3. Можно создать заказ с черным и серым цветами")
-    @allure.description(
-        "Отправляем POST-запрос на создание заказа. "
-        "Проверяем, что заказ можно создать с черным и серым цветами"
-    )
-    def test_create_order_with_both_colors(self):
-        response = requests.post(f"{Url.BASE_URL}/orders", json=order_data_both_colors)
-
-        assert response.status_code == 201, "Код ответа не 201"
-        response_data = response.json()
-        assert "track" in response_data, "Ответ не содержит track"
-
-    @allure.title("4. Можно создать заказ без указания цвета")
-    @allure.description(
-        "Отправляем POST-запрос на создание заказа. "
-        "Проверяем, что заказ можно создать без указания цвета"
-    )
-    def test_create_order_without_color(self):
-        response = requests.post(f"{Url.BASE_URL}/orders", json=order_data_no_color)
+        allure.dynamic.title(
+            f"{test_number}: Можно создать заказ с {color_description}"
+        )
 
         assert response.status_code == 201, "Код ответа не 201"
         response_data = response.json()
