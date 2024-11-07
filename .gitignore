@@ -87,10 +87,6 @@ Dockerfile
 *.swo
 *.tmp
 
-# Allure reports
-allure-results/
-allure-report/
-
 # Mac-specific files
 .DS_Store
 
